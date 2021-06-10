@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+</head>
+<!-- 最新版本的 Bootstrap 核心 CSS 文件 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+<!-- 可选的 Bootstrap 主题文件（一般不用引入） -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+
+<!-- 最新的 Bootstrap 核心 JavaScript 文件 -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<body>
+
+
+<div id="app">
+    <div style="height: 60px;width: 100%;background-color: darkblue;color: white;line-height: 60px;font-size: 30px;text-align: center">SOAP to REST</div>
+    <div style="box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.35);padding: 30px">
+        <div style="width: 100%;margin-top: 20px;margin-left: 30px;">
+            <input type="text" style="width: 700px"
+                   v-model="url"
+                   placeholder="请输入wsdl文件的url" >
+        </div>
+        <div style="width: 100%;margin-top: 20px;margin-left: 30px;">
+            <input type="text"  style="width: 700px"
+                   v-model="web_name"
+                   placeholder="请自定义项目名称，如 aaa">
+        </div>
+        <div style="width: 100%;margin-top: 20px;margin-left: 30px;">
+        <textarea class="form-control" rows="3"
+                  v-model="des"
+                  placeholder="请输入服务的主要功能"></textarea>
+        </div>
+        <div style="width: 100%;margin-top: 20px;margin-left: 30px;">
+            <button  @click="get_rest" type="submit" style="background-color: darkblue;color: white">提交</button>
+        </div>
+    </div>
+
+    <div v-show="tag==1">
+        <div v-if="result.url" style="width: 100%;box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.35);padding: 30px">
+            <div style="height: 30px;background-color: orangered;line-height: 30px;color: white">GET</div>
+            <div  v-for="(value,key) in result.getServices.service">
+                <div style="margin-top: 20px;margin-left: 30px;box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.35);padding: 30px">
+                    <div>访问路径：{{path+key}}</div>
+                    <div style=" width: 50%;height: 1px;border-top: solid #ACC0D8 1px;"></div>
+                    <div>接口描述：{{value}}</div>
+                    <div><button @click="get_go(path+key)">测试</button></div>
+                </div>
+
+            </div>
+
+
+
+            <div style="height: 30px;margin-top: 20px;  background-color: orangered;line-height: 30px;color: white">POST</div>
+            <div  v-for="(item,index_root) in result.postServices.services">
+                <div style="margin-top: 20px;margin-left: 30px;box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.35);padding: 30px">
+                    <div>访问路径：{{path+item.url}}</div>
+                    <div style=" width: 50%;height: 1px;border-top: solid #ACC0D8 1px;"></div>
+                    <div style="margin-top: 10px">参数列表:</div>
+                    <div v-for="(value,key,index) in item.params">
+                        <div>{{key}}</div>
+                        <input type="text" v-model="my_params[index_root][index]">
+                    </div>
+                    <div style=" width: 50%;height: 1px;border-top: solid #ACC0D8 1px;"></div>
+                    <div>接口描述：{{item.node}}</div>
+                    <div><button @click="go(path+item.url,item.params,index_root)">测试</button></div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+</div>
+
+
+</body>
+<script>
+    var app = new Vue({
+        el: '#app',
+        data: {
+            message: 'Hello Vue!',
+            url: '',
+            web_name: '',
+            des: '',
+            tag: 0,
+            p_body: new FormData(),
+            result: {},
+            path: '',
+            my_params: [
+                ["","","","",""],
+                ["","","","",""],
+                ["","","","",""],
+                ["","","","",""],
+                ["","","","",""],
+            ]
+        },
+        methods:{
+            get_rest:function (){
+                this.tag=1
+                this.p_body.delete("url")
+                this.p_body.delete("web_name")
+                this.p_body.delete("text")
+                this.p_body.append("url",this.url)
+                this.p_body.append("web_name",this.web_name)
+                this.p_body.append("text",this.des)
+                fetch("/addwsdlurl",{
+                    method: "POST",
+                    body: this.p_body
+                }).then(res=>res.json())
+                .then(json=>{
+                    this.result=json
+                    this.path=this.result.url
+                    this.my_params=[
+                        ["","","","",""],
+                        ["","","","",""],
+                        ["","","","",""],
+                        ["","","","",""],
+                        ["","","","",""],
+                    ]
+                    console.log(this.result)
+                })
+            },
+            go:function (url,params,index_root){
+                var post_url="http://localhost:8080"+url
+                var body={}
+                var i=0
+                for(var item in params){
+                    body[item]=this.my_params[index_root][i]
+                    i++
+                }
+                alert(JSON.stringify(body))
+                fetch(post_url,{
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body:JSON.stringify(body)
+                }).then(res=>res.json()).then(json=>{
+                    alert(JSON.stringify(json))
+                })
+            },
+            get_go:function (path){
+                fetch("http://localhost:8080/"+path).then(res=>res.json())
+                .then(json=>{
+                    alert(json)
+                })
+            }
+        }
+    })
+</script>
+</html>
